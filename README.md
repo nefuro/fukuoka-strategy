@@ -1,14 +1,14 @@
-# チームみらい 神奈川活動戦略
+# チームみらい 福岡活動戦略
 
-チームみらいの神奈川県内での活動戦略をデータに基づいてまとめたページです。
+チームみらいの福岡県内での活動戦略をデータに基づいてまとめたページです。
 
 ## 公開ページ
 
-https://mirai-shonan.github.io/kanagawa-strategy/
+https://nefuro.github.io/fukuoka-strategy/
 
 ## 概要
 
-令和8年2月衆院選・令和7年7月参院選の神奈川県開票データをもとに、
+令和8年2月衆院選・令和7年7月参院選の福岡県開票データをもとに、
 市区町村別の得票率・票数を分析し、街頭活動・ポスティングの戦略をまとめています。
 
 ## 内容
@@ -100,8 +100,8 @@ python3 -m http.server 8000
 
 1. **このリポジトリをForkしてclone**
    ```bash
-   gh repo fork mirai-shonan/kanagawa-strategy --clone
-   cd kanagawa-strategy
+   gh repo fork nefuro/fukuoka-strategy --clone
+   cd fukuoka-strategy
    ```
 
 2. **選管サイトから生データをダウンロード**
@@ -113,7 +113,7 @@ python3 -m http.server 8000
 
 3. **`raw/` を新しいデータに差し替え**
    ```bash
-   # 既存の神奈川データを削除
+   # 既存の福岡データを削除
    rm raw/*
 
    # 新しい県のデータをダウンロード（ファイル名にキーワードを含めること）
@@ -296,8 +296,8 @@ print(f'差: {len(diff)}件, 値不一致: {mis}件')
 
 ## データ出典
 
-- [神奈川県選挙管理委員会 衆院比例 R8.2.8執行](https://www.pref.kanagawa.jp/docs/em7/cnt/f5/syuugikekka.html)
-- [神奈川県選挙管理委員会 参院比例・選挙区 R7.7.20執行](https://www.pref.kanagawa.jp/docs/em7/2025sangi_toukaihyousokuhou.html)
+- [福岡県選挙管理委員会 衆院比例 R8.2.8執行](https://www.pref.fukuoka.lg.jp/contents/51senkyo.html)
+- [福岡県選挙管理委員会 参院比例 R7.7.20執行](https://www.pref.fukuoka.lg.jp/contents/27sangisenkyo.html)
 
 ## 更新・貢献
 
