@@ -70,7 +70,10 @@ def is_gun(name):
 
 def strip_gun_prefix(name):
     """町村名から郡名を除去する（例: 「足柄下郡箱根町」→「箱根町」）"""
-    return GUN_RE.sub('', name)
+    m = re.match(r'^(.+郡)(.+[町村])$', name)
+    if m:
+        return m.group(2)
+    return name
 
 
 def parse_number(val):
@@ -368,6 +371,142 @@ def parse_house_proportional(filepath):
 
 
 # ============================================================
+# 衆院比例（P_20号様式シート）パーサー — 福岡等の選管Excel形式
+# ============================================================
+
+def parse_house_p20(filepath):
+    """
+    衆院比例の P_20号様式 シートをパースする。
+    「開票調」シートがないExcel（福岡県等）向けフォールバック。
+
+    想定フォーマット:
+    - Sheet: 'P_20号様式' (名前に 'P_20' を含む)
+    - Row 1: ヘッダー (頁番号, 行番号, 市区町村名, [届出番号N, 政党名N, 得票数N]..., 小計, ...)
+    - Row 2+: データ行
+    - 奇数ページ: 主要政党(10党), 偶数ページ: 追加政党(日本共産党等)
+    - 政令指定都市の区は直接列挙され、＊{市名}計 で小計行がある
+    - 選挙区分割 (例: 東区（１区）, 東区（４区）) は合算する
+    """
+    wb = openpyxl.load_workbook(filepath, data_only=True)
+    ws = None
+    for sn in wb.sheetnames:
+        if 'P_20' in sn:
+            ws = wb[sn]
+            break
+    if ws is None:
+        return None
+
+    # チームみらいの得票数列を探す
+    team_vote_col = None
+    subtotal_col = None
+    for col in range(4, ws.max_column + 1):
+        h = str(ws.cell(1, col).value or '')
+        if h.startswith('政党名'):
+            pname = str(ws.cell(2, col).value or '')
+            if 'チームみらい' in pname:
+                team_vote_col = col + 1  # 次の列が得票数
+        elif h == '小計':
+            subtotal_col = col
+            break
+
+    if team_vote_col is None:
+        print(f"  Warning: P_20号様式にチームみらい列が見つかりません", file=sys.stderr)
+        return None
+
+    # 全データ行を収集（奇数ページ: 主要政党, 偶数ページ: 追加政党）
+    odd_rows = []   # (raw_name, team_votes, subtotal)
+    even_rows = []  # (raw_name, extra_votes)
+
+    for r in range(2, ws.max_row + 1):
+        raw_name = str(ws.cell(r, 3).value or '').strip()
+        if not raw_name or raw_name == 'None':
+            continue
+        page = int(ws.cell(r, 1).value or 0)
+        if page % 2 == 1:
+            team = parse_number(ws.cell(r, team_vote_col).value)
+            sub = parse_number(ws.cell(r, subtotal_col).value) if subtotal_col else 0
+            odd_rows.append((raw_name, team, sub or 0))
+        else:
+            # 偶数ページ: 追加政党の得票数を全て合算
+            extra_total = 0
+            for ec in range(6, 34, 3):  # 得票数1, 得票数2, ... (cols 6, 9, 12, ...)
+                v = parse_number(ws.cell(r, ec).value)
+                if v is not None:
+                    extra_total += v
+            even_rows.append((raw_name, extra_total if extra_total > 0 else None))
+
+    def _clean(name):
+        return name.replace('＊', '').replace('*', '').replace(' ', '').replace('\u3000', '').strip()
+
+    def _build_city_map(rows):
+        """＊{市名}計 行を走査し、直前の区をその市に紐付ける city_map を返す。"""
+        city_map = {}
+        for i in range(len(rows)):
+            clean = _clean(rows[i][0])
+            if clean.endswith('計'):
+                city = clean.replace('計', '')
+                if city in DESIGNATED_CITIES:
+                    for j in range(i - 1, -1, -1):
+                        prev_clean = _clean(rows[j][0])
+                        if prev_clean.endswith('計'):
+                            break
+                        if j in city_map:
+                            break
+                        city_map[j] = city
+        return city_map
+
+    city_map_odd = _build_city_map(odd_rows)
+    city_map_even = _build_city_map(even_rows)
+
+    def _to_area(raw_name, city):
+        """生のエリア名を正規化。分割区(東区（１区）)は区名のみにする。"""
+        clean = _clean(raw_name)
+        if city:
+            ward = re.sub(r'[（(].+?[）)]', '', clean)
+            return city + ward
+        return clean
+
+    # 奇数ページ → merged dict
+    merged = {}
+    for i, (raw_name, team, sub) in enumerate(odd_rows):
+        clean = _clean(raw_name)
+        if clean.endswith('計') or clean.endswith('郡'):
+            continue
+        if team is None:
+            continue
+        area = _to_area(raw_name, city_map_odd.get(i))
+        if area in merged:
+            merged[area]['team'] += round(team)
+            merged[area]['subtotal'] += sub
+        else:
+            merged[area] = {'team': round(team), 'subtotal': sub, 'extra': 0}
+
+    # 偶数ページ → extra votes を加算
+    for i, (raw_name, extra) in enumerate(even_rows):
+        clean = _clean(raw_name)
+        if clean.endswith('計') or clean.endswith('郡'):
+            continue
+        if extra is None:
+            continue
+        area = _to_area(raw_name, city_map_even.get(i))
+        if area in merged:
+            merged[area]['extra'] += round(extra)
+
+    results = []
+    for area, d in merged.items():
+        total = d['subtotal'] + d['extra']
+        rate = round(d['team'] / total * 100, 1) if total > 0 else 0
+        results.append({
+            '地域': area,
+            '得票数': d['team'],
+            '得票率': rate,
+            '合計': round(total),
+        })
+
+    return results
+
+
+# ============================================================
 # 衆院比例（PDF版）パーサー — r8hirei.pdf形式
 # ============================================================
 
@@ -557,19 +696,23 @@ def convert_prefecture(prefecture_dir):
     files = find_excel_files(raw_dir, 'sangi', 'hirei', 'district')
     for f in files:
         print(f"参院比例（党派別開票区別）: {os.path.basename(f)}", file=sys.stderr)
-        results = parse_senate_proportional(f)
+        results = parse_house_p20(f)  # P_20号様式 を優先（福岡等）
+        if not results:
+            results = parse_senate_proportional(f)  # 開票区別シートにフォールバック
         if results:
             write_csv(results, os.path.join(data_dir, 'senate.csv'), ['地域', '得票数', '得票率'])
             converted += 1
         else:
             print(f"  Warning: パース失敗", file=sys.stderr)
 
-    # 衆院比例（Excel: 開票調シート） → house.csv
+    # 衆院比例（Excel: 開票調シート → P_20号様式 フォールバック） → house.csv
     files = find_excel_files(raw_dir, 'shugi', 'hirei')
     house_done = False
     for f in files:
         print(f"衆院比例 (Excel): {os.path.basename(f)}", file=sys.stderr)
         results = parse_house_proportional(f)
+        if not results:
+            results = parse_house_p20(f)
         if results:
             write_csv(results, os.path.join(data_dir, 'house.csv'),
                       ['地域', '得票数', '得票率', '合計'])
