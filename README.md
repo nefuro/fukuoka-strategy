@@ -1,6 +1,6 @@
 # チームみらい 福岡活動戦略
 
-> **このリポジトリは [nefuro/kanagawa-strategy](https://github.com/nefuro/kanagawa-strategy) の Fork です。**
+> **このリポジトリは [mirai-shonan/kanagawa-strategy](https://github.com/mirai-shonan/kanagawa-strategy) の Fork です。**
 > 共通のUI/ロジック（`app.js`, `style.css`）や運用手順・開発ガイドは本家を参照してください。
 
 チームみらいの福岡県内での活動戦略をデータに基づいてまとめたページです。
@@ -91,7 +91,7 @@ python3 -m http.server 8000
 
 **運用手順（Fork方式での横展開、選挙データ最新化、共通ロジック修正、戦略コンテンツ修正、データ整合性検証、トラブルシューティング等）は、すべて本家リポジトリの README を参照してください。**
 
-👉 **[nefuro/kanagawa-strategy — README（運用手順）](https://github.com/nefuro/kanagawa-strategy#-運用手順claudeai向け実行ガイド)**
+👉 **[mirai-shonan/kanagawa-strategy — README（運用手順）](https://github.com/mirai-shonan/kanagawa-strategy#-運用手順claudeai向け実行ガイド)**
 
 > **注意:** 共通ロジック（`app.js`, `style.css`）のバグ修正・機能追加は、まず本家 kanagawa-strategy で修正し、各 Fork に反映する運用を推奨します。
 
@@ -119,7 +119,7 @@ python3 -m http.server 8000
 本家に共通ロジックの更新があった場合:
 
 ```bash
-git remote add upstream https://github.com/nefuro/kanagawa-strategy.git
+git remote add upstream https://github.com/mirai-shonan/kanagawa-strategy.git
 git fetch upstream
 git merge upstream/main
 ```
@@ -128,5 +128,5 @@ git merge upstream/main
 
 ## 更新・貢献
 
-- **共通ロジック（UI/JS/CSS）の改善** → 本家 [kanagawa-strategy](https://github.com/nefuro/kanagawa-strategy) に PR を送ってください
+- **共通ロジック（UI/JS/CSS）の改善** → 本家 [kanagawa-strategy](https://github.com/mirai-shonan/kanagawa-strategy) に PR を送ってください
 - **福岡固有の修正・改善** → このリポジトリの Issues または Pull Requests からお願いします
