@@ -1,5 +1,8 @@
 # チームみらい 福岡活動戦略
 
+> **このリポジトリは [nefuro/kanagawa-strategy](https://github.com/nefuro/kanagawa-strategy) の Fork です。**
+> 共通のUI/ロジック（`app.js`, `style.css`）や運用手順・開発ガイドは本家を参照してください。
+
 チームみらいの福岡県内での活動戦略をデータに基づいてまとめたページです。
 
 ## 公開ページ
@@ -84,213 +87,25 @@ python3 -m http.server 8000
 
 ---
 
-## 🤖 運用手順（Claude/AI向け実行ガイド）
+## 🤖 運用手順・開発ガイド
 
-このセクションは Claude Code 等のAIエージェントが正確に作業を実行できる粒度で書かれています。
+**運用手順（Fork方式での横展開、選挙データ最新化、共通ロジック修正、戦略コンテンツ修正、データ整合性検証、トラブルシューティング等）は、すべて本家リポジトリの README を参照してください。**
 
-### 操作1: 他の都道府県版を作成する（Fork方式）
+👉 **[nefuro/kanagawa-strategy — README（運用手順）](https://github.com/nefuro/kanagawa-strategy#-運用手順claudeai向け実行ガイド)**
 
-**目的:** このリポジトリをForkして、別の都道府県の戦略ダッシュボードを作成する。
-
-**前提:**
-- Forkした自分のリポジトリを clone してローカルで作業する
-- 対象都道府県のチームみらい候補がいる選挙データがある
-
-**手順:**
-
-1. **このリポジトリをForkしてclone**
-   ```bash
-   gh repo fork nefuro/fukuoka-strategy --clone
-   cd fukuoka-strategy
-   ```
-
-2. **選管サイトから生データをダウンロード**
-   - 対象都道府県の選挙管理委員会サイトを確認
-   - 以下の3種類のファイルを探す:
-     - 衆院比例（党派別開票区別）— ExcelまたはPDF
-     - 参院比例（党派別開票区別）— Excel
-     - 参院選挙区（候補者別開票区別）— Excel
-
-3. **`raw/` を新しいデータに差し替え**
-   ```bash
-   # 既存の福岡データを削除
-   rm raw/*
-
-   # 新しい県のデータをダウンロード（ファイル名にキーワードを含めること）
-   curl -sLo raw/R8.2_shugi_hirei.pdf "<URL>"
-   curl -sLo raw/R7.7_sangi_hirei_district.xlsx "<URL>"
-   curl -sLo raw/R7.7_sangi_senkyoku.xlsx "<URL>"
-   ```
-
-   **ファイル名の命名規則**（小文字に変換して判定されます）:
-
-   | データ種別 | 必須キーワード | 出力先CSV |
-   |---|---|---|
-   | 参院選挙区候補者別 | `sangi` + `senkyoku` | `data/candidate.csv` |
-   | 参院比例党派別開票区別 | `sangi` + `hirei` + `district` | `data/senate.csv` |
-   | 衆院比例（Excel/PDF） | `shugi` + `hirei` | `data/house.csv` |
-
-4. **変換スクリプトを実行してCSVを生成**
-   ```bash
-   python3 tools/convert_excel.py
-   ```
-
-   **期待される出力:**
-   ```
-   Processing: .
-     raw/  → ./raw
-     data/ → ./data
-   参院選挙区: ...
-     → ./data/candidate.csv (N rows)
-   参院比例（党派別開票区別）: ...
-     → ./data/senate.csv (N rows)
-   衆院比例 ...
-     → ./data/house.csv (N rows)
-   ```
-
-5. **`data/posting.csv` を作成**（選管にない手動データ）
-   - ポスティング実績を記録
-   - 実績がなければヘッダー行のみのファイルでOK
-   - フォーマット: `地域,配布枚数,エリア数,得票率,得票数`
-
-6. **`data.js` の `CONFIG` を編集**
-   - 変更必須のフィールド:
-     - `prefectureName`, `bloc`
-     - `houseElection`, `senateElection`
-     - `teamVotesHouse`, `teamRateHouse` (選管総括表から)
-     - `teamVotesSenate`, `teamRateSenate`
-     - `totalVotes`, `topRateArea`, `topRate`
-     - `electedCount`, `electedSummary`, `electedLabel`, `electedBlocLabel`
-     - `dataSourceLabel`, `dataSourceUrls`
-     - `partyBars`（県全体の党派別得票率）
-     - `overviewInsight`（分析コメント）
-   - **重要:** `FALLBACK_DATA`/`FALLBACK_POSTING`/`FALLBACK_KAWAI` も初期値として設定する（CSV読み込み失敗時の保険）
-
-7. **`index.html` のコンテンツを編集**
-   - `<title>` を変更
-   - 以下のセクションを各県の状況に合わせて書き換え:
-     - 衆参比較セクションの insight テキスト
-     - 当選議員セクション
-     - イベントセクション
-     - コスパ・伸びしろセクション
-     - 学術・子育て・シニアの各ターゲットセクション
-   - **触らない部分:** ヘッダー、概況の統計カード、全自治体テーブル、ポスティング、演説（これらは `app.js` がCONFIG/データから自動レンダリング）
-   - **触ってはいけない要素ID:** `overview-stats`, `party-bars`, `top10-list`, `all-tbody`, `diff-up-list`, `diff-down-list`, `kawai-list`, `posting-*`, `speech-*`, `app-footer`, `header-title`, `header-sub`
-   - **タブのIDは英語**（`overview`, `all`, `compare`, `elected`, `cost`, `growth`, `events`, `posting`, `speech`, `academic`, `family`, `senior`）。Hash routing で使われるので変更しないでください
-
-8. **ローカルで動作確認**
-   ```bash
-   python3 -m http.server 8000
-   ```
-   http://localhost:8000/ を開き、全11タブが正常表示されることを確認
-
-9. **コミット&push**
-   ```bash
-   git add .
-   git commit -m "feat: <県名>のデータに差し替え"
-   git push
-   ```
-
-10. **GitHub Pagesを有効化** (Settings → Pages → Source: main branch)
+> **注意:** 共通ロジック（`app.js`, `style.css`）のバグ修正・機能追加は、まず本家 kanagawa-strategy で修正し、各 Fork に反映する運用を推奨します。
 
 ---
 
-### 操作2: 選挙データを最新化する
+## 福岡固有の変更点
 
-**目的:** 新しい選挙が終わった後、最新のExcel/PDFに差し替える。
+本家 kanagawa-strategy からの主な差分:
 
-**手順:**
-
-1. **新しいデータをダウンロード**
-   ```bash
-   curl -sLo raw/R<新元号>_shugi_hirei.pdf "<新URL>"
-   ```
-
-2. **古いraw/ファイルは残すか削除**
-   - 履歴を残したい場合は古いファイルもgit管理しておく
-   - 不要なら `git rm raw/<古いファイル>`
-
-3. **変換スクリプトを再実行**
-   ```bash
-   python3 tools/convert_excel.py
-   ```
-
-4. **`data.js` の `CONFIG` の数値を更新**
-   - `teamVotesHouse`, `teamRateHouse` 等を新しい総括表から更新
-   - `houseElection`, `dataSourceUrls` のラベル・URLも更新
-
-5. **動作確認 → コミット**
-
----
-
-### 操作3: 共通ロジック（CSS/JS）を修正する
-
-**目的:** UIやロジックを修正する（バグ修正・機能追加）。
-
-**注意:** Fork方式では各県のリポジトリが独立しているため、共通ロジックの修正は **手動で各Forkに反映する必要があります**。中央管理が必要な場合はディレクトリ方式（PR #1）を検討してください。
-
-**手順:**
-
-1. **`style.css` または `app.js` を編集**
-2. **ローカル動作確認**
-   ```bash
-   python3 -m http.server 8000
-   ```
-3. **コミット**
-
----
-
-### 操作4: 戦略コンテンツを修正する
-
-**目的:** 戦略文言・イベントカレンダー・優先エリアを更新する。
-
-**手順:**
-
-1. **`index.html` を編集**
-   - 編集対象セクション例:
-     - `<!-- ===== コスパ ===== -->` 配下
-     - `<!-- ===== イベント ===== -->` 配下
-     - `<!-- ===== 学術・若者 ===== -->`, `<!-- ===== 子育て ===== -->`, `<!-- ===== 祖父母世代 ===== -->` 配下
-   - **触ってはいけない要素ID:** `overview-stats`, `party-bars`, `top10-list`, `all-tbody`, `diff-up-list`, `diff-down-list`, `kawai-list`, `posting-*`, `speech-*`, `app-footer`, `header-title`, `header-sub`
-
-2. **動作確認 → コミット**
-
----
-
-### 操作5: データの整合性を検証する
-
-**目的:** 変換スクリプトが生成したCSVが既存のハードコードフォールバックと一致するか確認する。
-
-**実行例:**
-
-```bash
-python3 -c "
-import csv, json, re
-with open('data/house.csv') as f:
-    new = {r['地域']: r for r in csv.DictReader(f)}
-with open('data.js') as f:
-    content = f.read()
-match = re.search(r'FALLBACK_DATA\s*=\s*(\[.+?\]);', content, re.DOTALL)
-old = {d['地域']: d for d in json.loads(match.group(1))}
-diff = set(old) ^ set(new)
-mis = sum(1 for a in old if a in new and (old[a]['チームみらい'] != int(new[a]['得票数']) or abs(old[a]['チームみらい率'] - float(new[a]['得票率'])) > 0.05))
-print(f'差: {len(diff)}件, 値不一致: {mis}件')
-"
-```
-
-期待値: `差: 0件, 値不一致: 0件`
-
----
-
-### トラブルシューティング
-
-| 症状 | 原因 | 対処 |
-|---|---|---|
-| ブラウザでデータが表示されない | `file://` で開いている | `python3 -m http.server 8000` でサーバー起動 |
-| `Warning: チームみらい列が見つかりません` | その選挙にチームみらい候補がいない | 過去選挙のデータでは正常な動作。最新選挙のExcelを確認 |
-| 自治体数が想定より少ない | 政令指定都市の親市行/合計行が混入 | `extract_area_name()` の判定ロジックを確認 |
-| `pdfplumber が必要です` エラー | パッケージ未インストール | `pip install pdfplumber` |
-| PDFパース後の自治体名が壊れている | 全角/半角空白の混在 | `_normalize_pdf_area()` の処理を確認 |
+- `data.js` の `CONFIG` を福岡県のデータに差し替え
+- `raw/` を福岡県選管のExcel/PDFに差し替え
+- `data/` を福岡県のCSVに差し替え
+- `index.html` の戦略コンテンツ（イベント・ターゲット別等）を福岡県向けに書き換え
+- カラーテーマを変更
 
 ---
 
@@ -299,6 +114,19 @@ print(f'差: {len(diff)}件, 値不一致: {mis}件')
 - [福岡県選挙管理委員会 衆院比例 R8.2.8執行](https://www.pref.fukuoka.lg.jp/contents/51senkyo.html)
 - [福岡県選挙管理委員会 参院比例 R7.7.20執行](https://www.pref.fukuoka.lg.jp/contents/27sangisenkyo.html)
 
+## upstream との同期
+
+本家に共通ロジックの更新があった場合:
+
+```bash
+git remote add upstream https://github.com/nefuro/kanagawa-strategy.git
+git fetch upstream
+git merge upstream/main
+```
+
+コンフリクトが発生した場合、`data.js`・`index.html`・`raw/`・`data/` は福岡固有なので **こちら側（ours）を優先** してください。`app.js`・`style.css` は本家の変更を取り込むのが基本です。
+
 ## 更新・貢献
 
-修正・改善の提案はIssuesまたはPull Requestsからお願いします。
+- **共通ロジック（UI/JS/CSS）の改善** → 本家 [kanagawa-strategy](https://github.com/nefuro/kanagawa-strategy) に PR を送ってください
+- **福岡固有の修正・改善** → このリポジトリの Issues または Pull Requests からお願いします
