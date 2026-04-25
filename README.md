@@ -198,5 +198,5 @@ git merge upstream/main
 
 ## 📝 更新・貢献
 
-- **共通ロジック（UI/JS/CSS）の改善** → 本家 [kanagawa-strategy](https://github.com/mirai-shonan/kanagawa-strategy) に PR を送ってください
 - **福岡固有の修正・改善** → このリポジトリの Issues または Pull Requests からお願いします
+- **共通ロジック（UI/JS/CSS）の改善** → 本家 [kanagawa-strategy](https://github.com/mirai-shonan/kanagawa-strategy) への PR はリポジトリ管理者（[@nefuro](https://github.com/nefuro)）が [nefuro/kanagawa-strategy](https://github.com/nefuro/kanagawa-strategy) 経由で行います。本家に上げたい変更がある場合は Issue で相談してください
