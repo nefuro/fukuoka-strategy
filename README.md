@@ -26,6 +26,20 @@
 - [福岡県選挙管理委員会 参院比例 R7.7.20執行](https://www.pref.fukuoka.lg.jp/contents/27sangisenkyo.html)
 - ポスティングデータ：[action.team-mir.ai](https://action.team-mir.ai/)（2026/04/25時点）
 
+## 🔀 kanagawa-strategy との運用の違い
+
+| | kanagawa-strategy | fukuoka-strategy |
+|---|---|---|
+| ポスティングデータ | HTML内にJSON直書き | [action.team-mir.ai](https://action.team-mir.ai/) から抽出 → 逆ジオコーディング → CSV化（手動・都度更新） |
+| 演説データ | Google Apps Script でスプレッドシートからライブ取得 | 未対応（福岡版のスプレッドシート・Apps Script が未構築） |
+| 地図 | Datawrapper で作成した画像を埋め込み | action.team-mir.ai へのリンク（Datawrapper は未作成） |
+| データ更新 | HTML を直接編集してコミット | `data/posting.csv` と `data.js` を更新してコミット |
+
+### 注意点
+
+- ポスティングデータは action.team-mir.ai の「2026年1月〜」イベントの累計値を使用。衆院選期間（〜2/7）のみのフィルタができないため選挙期間外のデータも含む（サイト上にも注記済み）
+- action.team-mir.ai に公開APIがないため、更新のたびにログイン → Leafletマーカー手動抽出 → 国土地理院逆ジオコーダで市区町村変換が必要
+
 ## 🔄 upstream との同期
 
 本家に共通ロジックの更新があった場合:
