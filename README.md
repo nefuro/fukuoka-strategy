@@ -58,7 +58,47 @@
 
 ### 新しい選挙が行われた場合
 
-`ELECTED_MEMBERS` に行を追加するだけ（出典: [team-mir.ai](https://team-mir.ai/)）。
+#### 1. 当選者データの確認
+
+[team-mir.ai](https://team-mir.ai/) の選挙結果ページを確認:
+- 衆院選: `https://team-mir.ai/election/shugiin-YYYY/result`
+- 参院選: `https://team-mir.ai/election/sangiin-YYYY/result`
+
+各当選者の **名前・ブロック（衆院）or 選挙区（参院）・当選経路・新人/元職** を確認します。
+
+#### 2. `data.js` の `ELECTED_MEMBERS` に行を追加
+
+```js
+// 例: 次の参院選で福岡県選挙区から当選者が出た場合
+{ election: "参院R10.7", name: "候補者名", bloc: null, prefecture: "福岡", status: "新人", type: "選挙区" },
+
+// 例: 次の参院選で比例から当選者が出た場合
+{ election: "参院R10.7", name: "候補者名", bloc: null, prefecture: null, status: "新人", type: "比例" },
+
+// 例: 次の衆院選で小選挙区当選者が出た場合
+{ election: "衆院R12.X", name: "候補者名", bloc: "九州ブロック", status: "前職", type: "選挙区", district: "福岡1区" },
+```
+
+#### 3. `CONFIG` の選挙回次を更新
+
+新しい選挙のデータを概況タブにも反映する場合は `CONFIG` の以下も更新:
+
+```js
+houseElection: "R12.X",   // 新しい衆院選の場合
+senateElection: "R10.7",  // 新しい参院選の場合
+teamVotesHouse: ...,      // 新しい得票数
+teamRateHouse: ...,       // 新しい得票率
+```
+
+#### 4. コミット＆push
+
+```bash
+git add data.js
+git commit -m "feat: ELECTED_MEMBERS に参院R10.7の当選者を追加"
+git push
+```
+
+**注意:** `ELECTED_MEMBERS` は全ブロック・全選挙共通データです。本家 kanagawa-strategy と同じデータを使うので、本家に PR を出すか、本家の更新を `git merge upstream/main` で取り込む形が理想的です。
 
 ## 🔀 kanagawa-strategy との運用の違い
 
