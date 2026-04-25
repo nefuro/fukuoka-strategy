@@ -26,6 +26,40 @@
 - [福岡県選挙管理委員会 参院比例 R7.7.20執行](https://www.pref.fukuoka.lg.jp/contents/27sangisenkyo.html)
 - ポスティングデータ：[action.team-mir.ai](https://action.team-mir.ai/)（2026/04/25時点）
 
+## 🏛️ 当選議員セクションの運用
+
+当選議員セクション（`#elected`）は `data.js` の `ELECTED_MEMBERS` 定数から動的にレンダリングされます。
+
+### データ構造
+
+```js
+{ election: "衆院R8.2", name: "古川あおい", bloc: "九州ブロック", status: "新人", type: "比例単独" }
+{ election: "参院R7.7", name: "安野たかひろ", bloc: null, prefecture: null, status: "新人", type: "比例" }
+```
+
+| フィールド | 説明 |
+|---|---|
+| `election` | `CONFIG.houseElection` / `senateElection` と一致させる（例: `"衆院R8.2"`） |
+| `bloc` | 衆院の比例ブロック（参院比例の場合は `null`） |
+| `prefecture` | 参院選挙区の都道府県名（衆院・参院比例の場合は省略） |
+| `type` | `"比例単独"` / `"比例復活"` / `"選挙区"` / `"比例"` |
+| `district` | 比例復活の場合の小選挙区名（例: `"東京7区"`） |
+
+### 表示ロジック
+
+- **衆院**: `CONFIG.bloc` に一致するブロックの当選者をハイライト
+- **参院選挙区**: `CONFIG.prefectureName` に一致する県の当選者をハイライト
+- **参院比例**: 全国区のため全県で表示
+- 該当者がいない場合は「次回の目標」メッセージを自動表示
+
+### Fork 時の設定
+
+`CONFIG.bloc` と `CONFIG.prefectureName` を変更するだけで自動対応。`ELECTED_MEMBERS` は全ブロック・全選挙共通。
+
+### 新しい選挙が行われた場合
+
+`ELECTED_MEMBERS` に行を追加するだけ（出典: [team-mir.ai](https://team-mir.ai/)）。
+
 ## 🔀 kanagawa-strategy との運用の違い
 
 | | kanagawa-strategy | fukuoka-strategy |

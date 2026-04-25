@@ -9,8 +9,35 @@ function initHeader() {
   document.querySelector('.header-sub').textContent = '衆院' + CONFIG.houseElection + ' ／ 参院' + CONFIG.senateElection + ' データ';
 }
 
+// ===== 選挙別の当選者フィルタ =====
+// 衆院: CONFIG.bloc でマッチ、参院選挙区: CONFIG.prefectureName でマッチ、参院比例: 全国
+function getLocalMembers(members, election) {
+  if (!members || !members.length) return [];
+  const isHouse = election.startsWith('衆院');
+  return members.filter(m => {
+    if (m.election !== election) return false;
+    if (isHouse) return m.bloc === CONFIG.bloc;
+    // 参院: 選挙区は県名一致、比例は全国（常にlocal扱い）
+    if (m.prefecture) return m.prefecture === CONFIG.prefectureName;
+    return true; // 参院比例は全国区なので全県に表示
+  });
+}
+
 // ===== 概要カード =====
 function renderOverview() {
+  // 衆院の当選者情報を ELECTED_MEMBERS から自動算出
+  const bloc = CONFIG.bloc;
+  const houseElection = '衆院' + CONFIG.houseElection;
+  let electedLabel = '—';
+  let electedSummary = '';
+  if (typeof ELECTED_MEMBERS !== 'undefined') {
+    const localHouse = getLocalMembers(ELECTED_MEMBERS, houseElection);
+    electedLabel = localHouse.length > 0 ? localHouse.length + '名当選' : '当選者なし';
+    electedSummary = localHouse.length > 0
+      ? localHouse.map(m => m.name).join('・')
+      : bloc + 'での議席獲得を目指す';
+  }
+
   document.getElementById('overview-stats').innerHTML = `
   <div class="stat-grid">
     <div class="stat-card">
@@ -29,9 +56,9 @@ function renderOverview() {
       <div class="stat-sub">${CONFIG.topRateArea}</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">${CONFIG.electedBlocLabel}<br>チーム${CONFIG.prefectureName}</div>
-      <div class="stat-value" style="font-size:15px;color:var(--green-mid);">${CONFIG.electedLabel}</div>
-      <div class="stat-sub">${CONFIG.electedSummary}</div>
+      <div class="stat-label">衆院選 ${bloc}<br>チーム${CONFIG.prefectureName}</div>
+      <div class="stat-value" style="font-size:15px;color:var(--green-mid);">${electedLabel}</div>
+      <div class="stat-sub">${electedSummary}</div>
     </div>
   </div>`;
 }
@@ -55,6 +82,89 @@ function renderPartyBars() {
   if (insight && CONFIG.overviewInsight) {
     insight.innerHTML = '<strong>位置づけ：</strong>' + CONFIG.overviewInsight;
   }
+}
+
+// ===== 当選議員（動的レンダリング・複数選挙対応） =====
+function renderElected() {
+  const el = document.getElementById('elected-content');
+  if (!el || typeof ELECTED_MEMBERS === 'undefined') return;
+
+  const bloc = CONFIG.bloc;
+  const pref = CONFIG.prefectureName;
+
+  // 選挙ごとにグループ化（データ順を維持）
+  const elections = [];
+  const electionMap = {};
+  ELECTED_MEMBERS.forEach(m => {
+    if (!electionMap[m.election]) {
+      electionMap[m.election] = [];
+      elections.push(m.election);
+    }
+    electionMap[m.election].push(m);
+  });
+
+  let html = '';
+
+  elections.forEach(election => {
+    const members = electionMap[election];
+    const isHouse = election.startsWith('衆院');
+    const localMembers = getLocalMembers(ELECTED_MEMBERS, election);
+    const areaLabel = isHouse ? bloc : pref + '県 / 全国比例';
+
+    // ローカル当選者カード
+    if (localMembers.length > 0) {
+      html += `
+      <div style="background:linear-gradient(135deg,#2aaa8a,#4ecdc4);border-radius:13px;padding:14px;margin-bottom:11px;color:#0d2244;">
+        <div style="font-size:11px;color:rgba(255,255,255,.7);font-family:'DM Mono',monospace;margin-bottom:10px;">${election} ${areaLabel}</div>
+        ${localMembers.map(m => `
+        <div style="background:rgba(255,255,255,.45);border-radius:10px;padding:12px 16px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:15px;font-weight:700;color:#0d2244;">${m.name}</div>
+            <div style="font-size:10px;color:rgba(13,34,68,.5);margin-top:2px;">${m.type}${m.district ? '（' + m.district + '）' : ''}${m.prefecture ? '（' + m.prefecture + '県選挙区）' : ''}</div>
+          </div>
+          <div style="font-size:11px;color:rgba(13,34,68,.7);background:rgba(255,255,255,.5);padding:2px 8px;border-radius:6px;">${m.status}</div>
+        </div>`).join('')}
+      </div>`;
+    } else {
+      const noWinLabel = isHouse ? bloc + 'での議席獲得は次回の目標' : pref + '関連の当選者なし';
+      html += `
+      <div style="background:linear-gradient(135deg,#6baed6,#8ec8e8);border-radius:13px;padding:14px;margin-bottom:11px;color:#0d2244;">
+        <div style="font-size:11px;color:rgba(13,34,68,.6);font-family:'DM Mono',monospace;margin-bottom:10px;">${election} ${areaLabel}</div>
+        <div style="background:rgba(255,255,255,.45);border-radius:10px;padding:16px;text-align:center;">
+          <div style="font-size:14px;font-weight:700;color:#0d2244;">${noWinLabel}</div>
+        </div>
+      </div>`;
+    }
+
+    // 全国一覧テーブル
+    const areaCol = isHouse ? 'ブロック' : '選挙区';
+    html += `
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-label">チームみらい ${election} 全国当選者（${members.length}名）</div>
+      <table class="area-table" style="margin-top:8px;">
+        <thead><tr><th>氏名</th><th>${areaCol}</th><th>当選経路</th><th>新/元</th></tr></thead>
+        <tbody>
+          ${members.map(m => {
+            const isLocal = localMembers.includes(m);
+            const typeLabel = m.district ? m.type + '（' + m.district + '）' : m.type;
+            const areaValue = isHouse ? m.bloc : (m.prefecture ? m.prefecture + '県' : '全国比例');
+            return `<tr style="${isLocal ? 'background:#e8f8f0;font-weight:700;' : ''}">
+              <td>${m.name}${isLocal ? ' ★' : ''}</td>
+              <td>${areaValue}</td>
+              <td>${typeLabel}</td>
+              <td>${m.status}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+      <div style="font-size:10px;color:var(--muted);margin-top:8px;">
+        出典：<a href="https://team-mir.ai/" style="color:var(--green-mid);">team-mir.ai</a>
+        ／ ★ = ${pref}関連
+      </div>
+    </div>`;
+  });
+
+  el.innerHTML = html;
 }
 
 // ===== フッター =====
@@ -667,6 +777,7 @@ async function initApp() {
   renderOverview();
   renderPartyBars();
   renderFooter();
+  renderElected();
   renderTop10();
   renderPosting();
   sortTable('チームみらい率', true, null);
