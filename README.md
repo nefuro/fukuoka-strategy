@@ -74,6 +74,78 @@
 - ポスティングデータは action.team-mir.ai の「2026年1月〜」イベントの累計値を使用。衆院選期間（〜2/7）のみのフィルタができないため選挙期間外のデータも含む（サイト上にも注記済み）
 - action.team-mir.ai に公開APIがないため、更新のたびにログイン → Leafletマーカー手動抽出 → 国土地理院逆ジオコーダで市区町村変換が必要
 
+## 📍 ポスティングデータの取得手順（Claude Code + Computer Use）
+
+action.team-mir.ai はログイン必須・公開APIなしのため、**Claude Desktop の Computer Use** でブラウザ操作してデータを抽出し、**Claude Code** で加工・反映するワークフローで運用しています。
+
+### 前提
+
+- action.team-mir.ai は Next.js Server Components 構成で、クライアント側 API 呼び出しは発生しない
+- ポスティングデータは Leaflet マーカーとして DOM 上に展開される（lat / lng / 枚数）
+- マーカーに市区町村名は含まれないため、逆ジオコーディングが必要
+
+### Step 1: Claude Desktop（Computer Use）でデータ抽出
+
+以下のプロンプトを Claude Desktop に渡してブラウザ操作を依頼:
+
+```
+1. ブラウザで https://action.team-mir.ai/sign-in を開きログイン
+2. https://action.team-mir.ai/map/posting に移動
+3. DevTools Console で以下を実行し、全マーカーの lat/lng/枚数 を JSON で取得:
+
+const orig = L.Marker.prototype._setPos;
+L.Marker.prototype._setPos = function(p) {
+  if (this._map) window.__theMap = this._map;
+  return orig.call(this, p);
+};
+window.dispatchEvent(new Event('resize'));
+// 3秒待ってから実行:
+const m = window.__theMap;
+const records = [];
+for (const k in m._layers) {
+  const l = m._layers[k];
+  if (l._latlng && l._icon) {
+    const t = l._icon.textContent;
+    if (t && /枚/.test(t)) {
+      records.push({
+        lat: l._latlng.lat,
+        lng: l._latlng.lng,
+        count: parseInt(t.replace('枚','').trim(), 10)
+      });
+    }
+  }
+}
+
+4. 福岡県の範囲（lat 33.0-34.0, lng 129.9-131.2）でフィルタ
+5. 結果を JSON ファイルとして保存
+```
+
+### Step 2: Claude Code で逆ジオコーディング → CSV 化
+
+抽出した JSON を Claude Code に渡して以下を依頼:
+
+```
+1. 各レコードの lat/lng を国土地理院逆ジオコーダで市区町村に変換
+   API: https://mreversegeocoder.gsi.go.jp/reverse-geocoder/LonLatToAddress?lat={lat}&lon={lng}
+   （無料・認証不要）
+2. muniCd（自治体コード）で市区町村別に集計
+3. data/posting.csv と data.js の FALLBACK_POSTING を更新
+```
+
+### Step 3: 確認 → コミット
+
+```bash
+python3 -m http.server 8000  # ローカルプレビュー
+# http://localhost:8000/#posting で確認
+git add data/posting.csv data.js
+git commit -m "feat: ポスティングデータを更新（YYYY/MM/DD時点）"
+git push
+```
+
+### 他県で Fork した場合
+
+Step 1 の緯度経度フィルタを対象県に変更するだけで同じ手順が使えます。
+
 ## 🔄 upstream との同期
 
 本家に共通ロジックの更新があった場合:
