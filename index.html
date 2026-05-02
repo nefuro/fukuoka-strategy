@@ -574,8 +574,8 @@
     </div>
     <div class="stat-card">
       <div class="stat-label">合計配布枚数</div>
-      <div class="stat-value" style="font-size:16px;">97,460<span class="stat-unit">枚</span></div>
-      <div class="stat-sub">2026年1月〜5/2累計（参考値）</div>
+      <div class="stat-value" style="font-size:16px;">約57,021<span class="stat-unit">枚</span></div>
+      <div class="stat-sub">手動集計</div>
     </div>
 
   </div>
@@ -600,30 +600,14 @@
     <div class="card-label">配布枚数 × 得票率 散布図</div>
     <div style="font-size:10px;color:var(--muted);margin-bottom:8px;">● ポスティングあり（緑）　● ポスティングなし（グレー）　※点にタップで詳細表示</div>
     <canvas id="scatter-chart" style="width:100%;max-height:280px;"></canvas>
-  </div>
-
-  <!-- ランキング -->
-  <div class="card">
-    <div class="card-label">配布枚数ランキング（上位15エリア）</div>
-    <div id="posting-ranking"></div>
-  </div>
-
-  <!-- エリア別一覧 -->
-  <div class="card">
-    <div class="card-label">全エリア一覧（配布枚数順）</div>
-    <div class="scroll-wrap">
-      <table class="area-table" id="posting-table">
-        <thead>
-          <tr>
-            <th>地域</th>
-            <th>配布<br>枚数</th>
-            <th>得票率</th>
-          </tr>
-        </thead>
-        <tbody id="posting-tbody"></tbody>
-      </table>
+    <div style="font-size:10px;color:var(--muted);margin-top:8px;line-height:1.5;">
+      ※ 散布図の配布枚数は Claude Desktop の Computer Use を使用し action.team-mir.ai のマップから大まかに取得した参考値です（隣接県データ混入・逆ジオコーディング誤差あり）。市区町村別の相対的な傾向の把握を目的としています。
     </div>
   </div>
+
+  <!-- ランキング・エリア別一覧は精度の問題により非表示 -->
+  <div id="posting-ranking" style="display:none;"></div>
+  <div id="posting-tbody" style="display:none;"></div>
 </div>
 
 <!-- ===== 演説 ===== -->
