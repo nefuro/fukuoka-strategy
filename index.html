@@ -543,7 +543,20 @@
 
   <div class="card" style="background:#fffbe6;border-color:#f5d87a;">
     <div style="font-size:12px;color:#7a5c00;line-height:1.7;">
-      福岡でのポスティング活動と比例得票率の相関分析。<br>ポスティングデータ：<a href="https://action.team-mir.ai/" style="color:#7a5c00;">action.team-mir.ai</a>（2026/04/25時点・合計88,975枚・23市区町村）<br><strong>※ 衆院選（〜2/7）期間のみのデータが取得できないため、2026年1月〜4/25の累計値を使用しています</strong>
+      福岡でのポスティング活動と比例得票率の相関分析。<br>ポスティングデータ：<a href="https://action.team-mir.ai/" style="color:#7a5c00;">action.team-mir.ai</a>（2026/05/02時点・合計約97,460枚・21市区町村）
+    </div>
+  </div>
+
+  <div class="card" style="background:#fff0f0;border-color:#f5a0a0;margin-bottom:11px;">
+    <div style="font-size:12px;color:#7a1a1a;line-height:1.8;">
+      <strong>⚠️ ポスティングデータの精度について</strong><br>
+      本データは action.team-mir.ai のマップから Claude Code の Computer Use を利用して自動抽出しています。以下の理由により<strong>実際の配布枚数より最大20%程度多く</strong>計上されている可能性があります。
+      <ul style="margin:6px 0 0 16px;padding:0;">
+        <li>緯度経度の矩形フィルタ（lat 33.0〜34.0, lng 129.9〜131.2）で福岡県を抽出しているため、<strong>佐賀県・大分県など隣接県の県境付近のデータが混入</strong>しています</li>
+        <li>逆ジオコーディング（国土地理院API）の精度限界により、一部のマーカーが正しい市区町村に分類されていない可能性があります</li>
+        <li>衆院選期間（〜2/7）のみのフィルタができないため、<strong>2026年1月〜5/2の累計値</strong>（選挙期間外含む）を使用しています</li>
+      </ul>
+      市区町村別の相対的な傾向の把握には十分ですが、絶対値としては参考値としてご利用ください。
     </div>
   </div>
 
@@ -552,17 +565,17 @@
     <div class="stat-card">
       <div class="stat-label">ポスティングあり<br>平均得票率</div>
       <div class="stat-value">7.0<span class="stat-unit">%</span></div>
-      <div class="stat-sub">27エリア</div>
+      <div class="stat-sub">21エリア</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">ポスティングなし<br>平均得票率</div>
-      <div class="stat-value">5.5<span class="stat-unit">%</span></div>
-      <div class="stat-sub">31エリア</div>
+      <div class="stat-value">5.6<span class="stat-unit">%</span></div>
+      <div class="stat-sub">51エリア</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">合計配布枚数</div>
-      <div class="stat-value" style="font-size:16px;">88,975<span class="stat-unit">枚</span></div>
-      <div class="stat-sub">2026年1月〜4/25累計（選挙期間外含む）</div>
+      <div class="stat-value" style="font-size:16px;">97,460<span class="stat-unit">枚</span></div>
+      <div class="stat-sub">2026年1月〜5/2累計（参考値）</div>
     </div>
 
   </div>
@@ -579,7 +592,7 @@
   </div>
 
   <div class="insight">
-    <strong>ポスティングの効果：</strong>ポスティングを実施したエリア（23市区町村）の平均得票率は<strong>7.0%</strong>で、未実施エリア（5.5%）より<strong>+1.5pt高い</strong>。ただし福岡市都市部にポスティングが集中しており、都市部はもともと得票率が高い傾向があるため因果関係の断定は難しい。今後の継続的なデータ蓄積でより精度の高い分析が可能になる。
+    <strong>ポスティングの効果：</strong>ポスティングを実施したエリア（21市区町村）の平均得票率は<strong>7.0%</strong>で、未実施エリア（5.6%）より<strong>+1.4pt高い</strong>。ただし福岡市都市部にポスティングが集中しており、都市部はもともと得票率が高い傾向があるため因果関係の断定は難しい。今後の継続的なデータ蓄積でより精度の高い分析が可能になる。
   </div>
 
   <!-- 散布図 -->
